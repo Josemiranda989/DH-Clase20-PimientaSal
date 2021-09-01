@@ -1,0 +1,127 @@
+GENERAR PROYECTO EXPRESS GENERATOR EJS
+1 Creamos proyecto con express generator y ejs template
+express DH-CLASE20-PIMIENTASAL --ejs
+2 Nos ubicamos en la carpeta creada y ejecutamos install
+npm install
+3 Cambiamos node por nodemon en packaage.json
+4 Agregamos .gitignore con /node_modules como contenido
+5 Creamos controllers/ con indexController.js y productoController.js
+6 Creamos en routes/ index.js productos.js users.js
+
+CREAR PARTIALS E INCLUIRLAS EN LAS VISTAS EJS
+1 En views creamos partials/
+2 Creamos encabezado.ejs en partials (contiene el head)
+2.1 Opcional header.ejs footer.ejs
+3 Copiamos del index.ejs el contenido del head y lo pegamos en encabezado.ejs
+5 En la linea de title agregamos una variable <%= title %> que permite poder modificar el nombre del titulo de cada pagina
+<title> <%= title %> </title>
+4 En index.ejs reemplazamos el head cortado en el paso anterior por 
+<%- include('./partials/encabezado', { title: "HOME" }) %>
+
+TRANSFORMAR LA SECCION MENU DEL INDEX.EJS PARA MOSTRAR NOMBRE DEL PLATO, DESCRIPCIÓN Y PRECIO DINAMICAMENTE L35
+1 Como primer paso crear la base de datos de los productos y exportarlo (preferentemente en un archivo externo /database/productos.js).
+2 Debemos ir a /controllers/indexController.js y requerir los productos creados anteriormente
+const productos = require('../database/productos')
+
+3 en la const controller.home debemos agregarle a la funcion la variable productos para usarla en la vista index
+
+const controller = {
+  home: (req, res) => {
+   
+    res.render("index", { productos: productos });
+  },
+}
+4 En index.ejs Agregamos el ciclo For para agregar todos los productos de la base de datos con sus repectivos nombres, descripciones y precios.
+
+<% for(let i=0; i < productos.length; i++){ %>
+
+  <h4>
+    <%= productos[i].nombrePlato %>
+  </h4>
+  <p class="ps-text-grey">
+    <%= productos[i].descripcion + " " + productos[i].precio %>
+  </p>
+  <br/>
+
+<% }%>
+
+AGREGAR RUTA EN EL SITIO PARA QUE CADA PLATO DEL MENU NOS PERMITA VER CON MAS DETALLE EL PLATO /detalle/:id (EN CASO DE QUE NO TENGA DETALLE LA DESCRIPCION QUE SEA PLATO TIPÏCO)
+1 Creamos detaleMenu.ejs (si es que no está creado) incluyendo el partials de encabezado 
+2 En productoController.js vamos a requerir la lista de productos de nuesta base de datos
+const productos = require('../database/productos')
+3 creamos la variable controller para que contenga todas las funcionalidades de los productos. en este caso detalle
+4 Lo que debemos hacer es comparar si el plato requerido desde el navegador es igual a uno de nuestro menú nos muestre las propiedades del mismo.
+4.1 Creamos la variable plato que será lo que ingresa desde la url del navegador.
+4.2 Una variable undefined (platoParaMostrar) 
+4.3 Ciclo For que recorra productos con la condición de comparar
+4.4 en caso de coincidir que a la variable platoParaMostrar le asigne el producto en la posición del ciclo.
+4.5 Luego debemos enviar la vista con res.render a detalleMenu.ejs y a su vez la variable obtenida para usarla en la vista. (plato para mostrar)
+
+const controller = {
+   detalle: (req, res) => {
+            const plato = req.params.plato;
+            let platoParaMostrar;
+            for (let i = 0; i < productos.length; i++) {
+                if (productos[i].nombrePlato == plato) {
+                    platoParaMostrar = productos[i];
+                }
+            }
+            res.render("detalleMenu", { producto: platoParaMostrar });
+
+    },
+}
+
+5 En routes/productos.js como primer paso debemos requerir express, router, productoController
+6 Siguiente paso con router hacer el pedido por get, designar la ruta que obtuvimos del req.params.plato y usar del productController la función de detalle
+router.get("/:plato", productoController.detalle);
+7 Exportamos el modulo de router
+8 En app.js debemos requerir esto y quedaría listo para la lógica de detalleMenu.ejs
+var productsRouter = require("./routes/productos");
+9 Reemplazamos los valores fijos como por ejemplo nombre del producto por nuestras variables producto.nombrePlato, producto.descripcionDetallada, producto.precio
+
+<div>
+    <h1 class="ps-center">
+      <%= producto.nombrePlato %>
+    </h1>
+    <br />
+    <h4>
+      <%= producto.descripcionDetallada %>
+    </h4>
+    <p class="ps-text-grey">
+      <%= producto.precio %>
+    </p>
+</div>
+
+10 (opcional) En la descripcion nos pide una condición, si no tiene descripción que devuelva "plato típico" para ello debemos hacer un condicional con if else.
+
+<!-- Menu Section -->
+<div class="ps-row ps-padding-64" id="menu">
+  <div class="ps-col l6 ps-padding-large">
+
+    <h1 class="ps-center">
+      <%= producto.nombrePlato %>
+    </h1>
+    <br />
+    <h4>
+      <% if(producto.descripcionDetallada !="" ){ %>
+        <%=producto.descripcionDetallada %>
+
+          <%}else {%>
+            <p>Plato Típico</p>
+            <% } %>
+    </h4>
+    <p class="ps-text-grey">
+      <%= producto.precio %>
+    </p>
+  </div>
+
+  <div class="ps-col l6 ps-padding-large ps-img-menu">
+    <img src="/images/menu.jpg" class="ps-round ps-image ps-opacity-min" alt="Menu" />
+  </div>
+</div>
+
+*PARA INGRESAR A VISTA INDEX 
+http://localhost:3000/
+*INGRESAR A DETALLES DE UN PRODUCTO
+http://localhost:3000/detalle/:plato (Nombre Del plato)
+(EJ. http://localhost:3000/detalle/Mousse%20de%20arroz)
